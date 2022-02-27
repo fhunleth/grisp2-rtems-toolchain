@@ -1,0 +1,24 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR BSD-2-Clause)
+/*
+ * Copyright (C) 2021 Peer Stritzinger GmbH.
+ */
+
+/ {
+	environment {
+		compatible = "barebox,uboot-environment";
+		device-path-0 = &uboot_env_0;
+	};
+};
+
+&usdhc2 {
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		uboot_env_0: partition@3e0000 {
+			label = "uboot-environment-0";
+			reg = <0x3e0000 0x20000>;
+		};
+	};
+};

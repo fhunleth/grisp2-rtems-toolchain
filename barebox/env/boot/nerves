@@ -1,0 +1,42 @@
+#!/bin/sh
+
+mmc1.probe=1
+
+readf /mnt/ubootvar0/nerves_fw_active nerves_fw_active
+readf /mnt/ubootvar0/nerves_fw_autovalidate nerves_fw_autovalidate
+readf /mnt/ubootvar0/nerves_fw_validated nerves_fw_validated
+readf /mnt/ubootvar0/nerves_fw_booted nerves_fw_booted
+
+if test $nerves_fw_booted = 1; then
+    if test $nerves_fw_validated = 0; then
+        if test $nerves_fw_active = "a"; then
+            echo "Reverting to partition B"
+            nerves_fw_active="b"
+        else
+            echo "Reverting to partition A"
+            nerves_fw_active="a"
+        fi
+        echo -n -o /mnt/ubootvar0/nerves_fw_active $nerves_fw_active
+        echo -n -o /mnt/ubootvar0/nerves_fw_validated 1
+    fi
+else
+    echo -n -o /mnt/ubootvar0/nerves_fw_booted 1
+    if test $nerves_fw_autovalidate = 1; then
+        echo -n -o /mnt/ubootvar0/nerves_fw_validated 1
+    fi
+fi
+
+# Flush U-Boot environment changes back to eMMC
+umount /mnt/ubootvar0
+
+if test $nerves_fw_active = "a"; then
+    boot_path=/mnt/mmc1.0
+    rootfs_path=/dev/mmcblk1p1
+else
+    boot_path=/mnt/mmc1.1
+    rootfs_path=/dev/mmcblk1p2
+fi
+
+global linux.bootargs.dyn.root="root=$rootfs_path rootwait"
+bootm -o $boot_path/boot/imx6ul-grisp2.dtb $boot_path/boot/zImage
+
